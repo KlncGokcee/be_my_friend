@@ -19,7 +19,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         
         {/* PANEL SAYFASI */}
-        <Route path="/panel" element={
+        <Route path="/mainpage" element={
           <Mainpage onOpenModal={() => setIsModalOpen(true)} />
         } />
 
