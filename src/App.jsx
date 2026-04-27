@@ -7,6 +7,7 @@ import Login from './Login';      // Giriş ekranın
 import Register from './Register';// Kayıt ekranın
 import Mainpage from './Mainpage';// Panel/Kampüs ekranın
 import Etkinlik from './Etkinlik';// Modal (Açılır pencere)
+import Profilim from './Profilim';
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,12 +20,13 @@ function App() {
         <Route path="/register" element={<Register />} />
         
         {/* PANEL SAYFASI */}
-        <Route path="/mainpage" element={
+        <Route path="/panel" element={
           <Mainpage onOpenModal={() => setIsModalOpen(true)} />
         } />
 
         {/* BURAYI EKLE: Etkinlik'i bağımsız bir sayfa olarak da tanımlıyoruz */}
         <Route path="/etkinlik" element={<Etkinlik isOpen={true} onClose={() => window.history.back()} />} />
+        <Route path="/profil" element={<Profilim />} />
       </Routes>
 
       {/* Panel içindeyken açılan Modal hali */}

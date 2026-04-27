@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 // onOpenModal: Ana sayfadan gönderilecek ve "Etkinlik Oluştur" butonuna tıklanınca modalı açacak fonksiyon
 function PanelPage({ onOpenModal }) {
@@ -20,7 +21,9 @@ function PanelPage({ onOpenModal }) {
             >
               + Etkinlik Oluştur
             </button>
-            <div className="w-10 h-10 rounded-full bg-gray-700 border border-gray-600"></div>
+            <Link to="/profil">
+              <div className="w-10 h-10 rounded-full bg-gray-700 border border-gray-600" />
+            </Link>
           </div>
         </div>
       </nav>
