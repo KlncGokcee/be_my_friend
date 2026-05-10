@@ -26,26 +26,39 @@ router.post('/register', async (req, res) => {
         res.status(500).json({ basari: false, mesaj: "Bu kullanıcı adı veya e-posta zaten kullanımda!" });
     }
 });
+    
 // 2. GİRİŞ YAP (LOGIN) API
+// GİRİŞ YAPMA (LOGIN)
 router.post('/login', async (req, res) => {
-    const { kullanici_adi, sifre } = req.body;
+    const { email, sifre } = req.body;
     const pool = req.app.locals.pool;
 
     try {
-        // Veritabanında bu kullanıcı adı ve şifreyle eşleşen biri var mı diye soruyoruz
-        const kullanici = await pool.query(
-            "SELECT * FROM kullanicilar WHERE kullanici_adi = $1 AND sifre = $2",
-            [kullanici_adi, sifre]
-        );
+        // 1. Kullanıcıyı e-posta adresiyle ara
+        const kullanici = await pool.query("SELECT * FROM kullanicilar WHERE email = $1", [email]);
 
         if (kullanici.rows.length === 0) {
-            return res.status(401).json({ basari: false, mesaj: "Hatalı kullanıcı adı veya şifre!" });
+            return res.status(401).json({ basari: false, mesaj: "Böyle bir kullanıcı bulunamadı!" });
         }
 
-        res.json({ basari: true, mesaj: "Giriş başarılı! Sisteme hoş geldin." });
+        // 2. Şifreyi kontrol et (Şu an düz metin olarak kontrol ediyoruz)
+        if (kullanici.rows[0].sifre !== sifre) {
+            return res.status(401).json({ basari: false, mesaj: "Şifre hatalı!" });
+        }
+
+        // 3. Başarılı giriş
+        res.json({ 
+            basari: true, 
+            mesaj: "Giriş başarılı! Hoş geldin " + kullanici.rows[0].tam_isim,
+            kullanici: {
+                id: kullanici.rows[0].id,
+                isim: kullanici.rows[0].tam_isim
+            }
+        });
+
     } catch (err) {
         console.error(err.message);
-        res.status(500).json({ basari: false, mesaj: "Sunucu hatası" });
+        res.status(500).json({ basari: false, mesaj: "Sunucu hatası!" });
     }
 });
 

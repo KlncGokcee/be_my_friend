@@ -1,12 +1,33 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 function LoginPage() {
-  
-  // Form gönderildiğinde sayfanın yenilenmesini engelleyen fonksiyon
-  const handleLogin = (e) => {
+  const [email, setEmail] = useState("");
+  const [sifre, setSifre] = useState("");
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    console.log("Giriş yapılıyor...");
-    // İleride buraya e-posta ve şifreyi kontrol edecek backend kodları eklenecek
+    
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, sifre })
+      });
+
+      const data = await response.json();
+
+      if (data.basari) {
+        alert("🔓 " + data.mesaj);
+        // Kullanıcı bilgisini tarayıcı hafızasına (LocalStorage) kaydedelim
+        localStorage.setItem("kullanici", JSON.stringify(data.kullanici));
+        // Başarılıysa ana sayfaya yönlendir
+        window.location.href = "/"; 
+      } else {
+        alert("❌ " + data.mesaj);
+      }
+    } catch (error) {
+        alert("Bağlantı hatası!");
+    }
   };
 
   return (
@@ -37,7 +58,9 @@ function LoginPage() {
             </label>
             <input 
               type="email" 
-              placeholder="kullanici@mail.com" 
+              value={email} // BURASI ÇOK ÖNEMLİ
+              onChange={(e) => setEmail(e.target.value)} // BURASI ÇOK ÖNEMLİ
+              placeholder="ahmet@mail.com"
               className="w-full bg-gray-800/40 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-gray-600 text-lg"
             />
           </div>
@@ -49,7 +72,9 @@ function LoginPage() {
             </label>
             <input 
               type="password" 
-              placeholder="••••••••" 
+              value={sifre} // BURASI ÇOK ÖNEMLİ
+              onChange={(e) => setSifre(e.target.value)} // BURASI ÇOK ÖNEMLİ
+              placeholder="••••••••"
               className="w-full bg-gray-800/40 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all placeholder:text-gray-600 text-lg"
             />
           </div>
