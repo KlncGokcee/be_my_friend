@@ -21,7 +21,7 @@ function LoginPage() {
         // Kullanıcı bilgisini tarayıcı hafızasına (LocalStorage) kaydedelim
         localStorage.setItem("kullanici", JSON.stringify(data.kullanici));
         // Başarılıysa ana sayfaya yönlendir
-        window.location.href = "/"; 
+        window.location.href = "/panel"; 
       } else {
         alert("❌ " + data.mesaj);
       }

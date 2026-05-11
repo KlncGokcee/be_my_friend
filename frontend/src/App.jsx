@@ -29,8 +29,10 @@ function App() {
         <Route path="/profil" element={<Profilim />} />
       </Routes>
 
-      {/* Panel içindeyken açılan Modal hali */}
-      <Etkinlik isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      {/* Modal'ı burada tanımlıyoruz, böylece her sayfada erişilebilir olur */}{/* Eğer isModalOpen TRUE ise Etkinlik bileşenini ekrana çiz, FALSE ise yok et */}
+      {isModalOpen && (
+        <Etkinlik onClose={() => setIsModalOpen(false)} />
+      )}
     </BrowserRouter>
   );
 }
