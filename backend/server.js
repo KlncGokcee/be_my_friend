@@ -22,12 +22,13 @@ app.locals.pool = pool;
 // ----------------------------------------
 // Dosyaları içeriye çağırıyoruz
 const authRoutes = require('./routes/auth');
-//const etkinliklerRoutes = require('./routes/etkinlikler');
+const etkinliklerRoutes = require('./routes/etkinlikler');
 //const profilRoutes = require('./routes/profil');
 //const bildirimlerRoutes = require('./routes/bildirimler');
 
 // Frontend'in istek atacağı URL'leri tanımlıyoruz
 app.use('/api/auth', authRoutes);
+app.use('/api/etkinlikler', etkinliklerRoutes);
 //app.use('/api/etkinlikler', etkinliklerRoutes);
 //app.use('/api/profil', profilRoutes);
 //app.use('/api/bildirimler', bildirimlerRoutes);

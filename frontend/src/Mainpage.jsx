@@ -48,7 +48,7 @@ function PanelPage({ onOpenModal }) {
   }, [chatHistories, activeChat]);
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
+    const userData = localStorage.getItem("kullanici");
     if (userData) {
       try {
         const parsedUser = JSON.parse(userData);
@@ -68,19 +68,70 @@ function PanelPage({ onOpenModal }) {
   };
 
   const basHarf = user.firstName.charAt(0).toUpperCase();
-  const categories = ["Hepsi", "Kulüp Etkinlikleri", "Ders Çalışma", "Spor & Oyun", "Parti & Eğlence"];
-  
-  const allEvents = [
-    { id: 1, category: "Kulüp Etkinlikleri", badge: "Yazılım Kulübü", badgeColor: "text-blue-400 bg-blue-500/10", time: "2 saat önce", title: "React ve Vite ile Frontend Atölyesi", desc: "Lab-3'te toplanıp web uygulamaları geliştireceğiz. Tailwind CSS de cabası!", participants: 15, btn: "Katıl", btnColor: "bg-gray-800 hover:bg-blue-600 text-white" },
-    { id: 2, category: "Spor & Oyun", badge: "Spor", badgeColor: "text-red-400 bg-red-500/10", time: "10 dk önce", title: "Halı Saha Maçı - Acil Adam Lazım!", desc: "Kampüs sahasında akşam 8 maçı için 2 kişi eksik.", participants: 0, btn: "İletişime Geç", btnColor: "bg-red-600/20 border border-red-600/50 text-red-400 hover:bg-red-600 hover:text-white" },
-    { id: 3, category: "Ders Çalışma", badge: "Kütüphane", badgeColor: "text-green-400 bg-green-500/10", time: "1 saat önce", title: "Algoritma Analizi Final Hazırlığı", desc: "Merkez kütüphanede toplu soru çözümü yapacağız.", participants: 8, btn: "Katıl", btnColor: "bg-gray-800 hover:bg-green-600 text-white" }
-  ];
 
-  const filteredEvents = allEvents.filter(event => {
-    const matchesCategory = activeCategory === "Hepsi" || event.category === activeCategory;
-    const matchesSearch = event.title.toLowerCase().includes(globalSearch.toLowerCase()) || event.desc.toLowerCase().includes(globalSearch.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  // KAYBOLAN SATIRIMIZ BURADA (Bunu Ekle)
+  const categories = ["Hepsi", "Kulüp Etkinlikleri", "Ders Çalışma", "Spor & Oyun", "Parti & Eğlence"];
+
+  // Kategoriye göre renkleri belirleyen motor
+  const getStyle = (kategori) => {
+    switch (kategori) {
+      case "Kulüp Etkinlikleri": return { badge: "text-blue-400 bg-blue-500/10", btn: "bg-gray-800 hover:bg-blue-600 text-white" };
+      case "Spor & Oyun": return { badge: "text-red-400 bg-red-500/10", btn: "bg-red-600/20 border border-red-600/50 text-red-400 hover:bg-red-600 hover:text-white" };
+      case "Ders Çalışma": return { badge: "text-green-400 bg-green-500/10", btn: "bg-gray-800 hover:bg-green-600 text-white" };
+      case "Parti & Eğlence": return { badge: "text-purple-400 bg-purple-500/10", btn: "bg-gray-800 hover:bg-purple-600 text-white" };
+      default: return { badge: "text-gray-400 bg-gray-500/10", btn: "bg-gray-800 hover:bg-gray-700 text-white" };
+    }
+  };
+
+  // Veritabanındaki iğrenç tarih formatını (2026-05-12T18:00:00Z) "12 May 18:00" gibi şık bir hale getirir
+  const formatTarih = (tarihStr) => {
+    if (!tarihStr) return "";
+    const tarih = new Date(tarihStr);
+    return tarih.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  };
+
+
+  // Mainpage.jsx içindeki state tanımlarının altına ekle:
+
+const [etkinlikler, setEtkinlikler] = useState([]); // Veritabanından gelen asıl veriler
+
+useEffect(() => {
+  // Backend'den verileri çeken fonksiyon
+  const etkinlikleriGetir = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/etkinlikler/hepsi");
+      const data = await response.json();
+
+      if (data.basari) {
+        // Backend'den gelen 'veriler' dizisini state'e kaydediyoruz
+        setEtkinlikler(data.veriler); 
+      } else {
+        console.error("Etkinlikler getirilirken hata:", data.mesaj);
+      }
+    } catch (error) {
+      console.error("Sunucuyla iletişim kurulamadı:", error);
+    }
+  };
+
+  etkinlikleriGetir();
+}, []); // Sayfa ilk açıldığında bir kez çalışması için [] bıraktık
+
+  // Eski allEvents yerine artık 'etkinlikler' kullanıyoruz
+const filteredEvents = etkinlikler.filter(event => {
+  // Kategori filtresi
+  const matchesCategory = activeCategory === "Hepsi" || event.kategori === activeCategory;
+  
+  // Arama filtresi (Hata almamak için null kontrolü ekledik)
+  const baslik = event.baslik ? event.baslik.toLowerCase() : "";
+  const aciklama = event.aciklama ? event.aciklama.toLowerCase() : "";
+  const aramaKelimesi = globalSearch.toLowerCase();
+
+  const matchesSearch = baslik.includes(aramaKelimesi) || aciklama.includes(aramaKelimesi);
+
+  return matchesCategory && matchesSearch;
+});
+
+ 
 
   return (
     <div className="bg-[#0f172a] text-white min-h-screen relative">
@@ -126,33 +177,54 @@ function PanelPage({ onOpenModal }) {
         {/* ORTA KOLON: ETKİNLİK AKIŞI */}
         <section className="w-full lg:w-2/4 space-y-6">
           {filteredEvents.length === 0 ? (
-            <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-10 text-center text-slate-500">Aradığın kritere uygun etkinlik bulunamadı.</div>
+            <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-10 text-center text-slate-500">
+              Aradığın kritere uygun etkinlik bulunamadı.
+            </div>
           ) : (
-            filteredEvents.map(event => (
+            filteredEvents.map(event => {
+              const stil = getStyle(event.kategori); // Rengi seç
+              
+              return (
               <div key={event.id} className="bg-slate-900/40 border border-slate-800 rounded-3xl overflow-hidden hover:border-slate-700 transition-colors shadow-xl">
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
-                    <span className={`${event.badgeColor} text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-current opacity-80`}>{event.badge}</span>
-                    <span className="text-slate-500 text-xs font-medium">{event.time}</span>
+                    {/* Rozet Rengi ve Kategori İsmi */}
+                    <span className={`${stil.badge} text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-current opacity-80`}>
+                      {event.kategori}
+                    </span>
+                    {/* Bitiş Tarihi */}
+                    <span className="text-slate-500 text-xs font-medium">
+                      Son Katılım: {formatTarih(event.bitis_tarihi)}
+                    </span>
                   </div>
-                  <h2 className="text-2xl font-black mb-2 text-slate-100">{event.title}</h2>
-                  <p className="text-slate-400 text-sm mb-6 leading-relaxed">{event.desc}</p>
+                  
+                  {/* Başlık ve Açıklama */}
+                  <h2 className="text-2xl font-black mb-2 text-slate-100">{event.baslik}</h2>
+                  <p className="text-slate-400 text-sm mb-6 leading-relaxed">{event.aciklama}</p>
                   
                   <div className="flex items-center justify-between pt-4 border-t border-slate-800/50">
-                    {event.participants > 0 ? (
+                    
+                    {/* Kontenjan ve Katılımcı Durumu */}
+                    {event.kontenjan ? (
                       <div className="flex -space-x-3">
                         <div className="w-8 h-8 rounded-full bg-blue-600 border-2 border-slate-900"></div>
                         <div className="w-8 h-8 rounded-full bg-purple-600 border-2 border-slate-900"></div>
-                        <div className="text-xs font-bold text-slate-500 self-center ml-4">+{event.participants} Katılımcı</div>
+                        <div className="text-xs font-bold text-slate-500 self-center ml-4">
+                          Kontenjan: {event.kontenjan} Kişi
+                        </div>
                       </div>
                     ) : (
-                      <div className="text-xs font-bold text-slate-500">İlk sen katıl!</div>
+                      <div className="text-xs font-bold text-slate-500">Sınırsız Kontenjan</div>
                     )}
-                    <button className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all w-full md:w-auto shadow-lg ${event.btnColor}`}>{event.btn}</button>
+                    
+                    {/* Buton */}
+                    <button className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all w-full md:w-auto shadow-lg ${stil.btn}`}>
+                      Katıl
+                    </button>
                   </div>
                 </div>
               </div>
-            ))
+            )})
           )}
         </section>
 
