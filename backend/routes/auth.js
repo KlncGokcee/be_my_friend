@@ -1,24 +1,30 @@
+const bcrypt = require('bcrypt');
 const express = require('express');
 const router = express.Router();
 
 // 1. KAYIT OL (REGISTER) API
 router.post('/register', async (req, res) => {
-    const { tam_isim, kullanici_adi, email, sifre } = req.body; // Frontend'den gelen 4 veri
+    const { tam_isim, kullanici_adi, email, sifre } = req.body;
     const pool = req.app.locals.pool;
-    // 1. İsteğin ulaştığını terminalde görelim
+
+    // Email kontrolü
+    if (!email.endsWith('@ogr.ktu.edu.tr') && !email.endsWith('@ktu.edu.tr')) {
+        return res.status(400).json({ basari: false, mesaj: "Sadece KTÜ maili kabul edilmektedir!" });
+    }
+
     console.log("-----------------------------------------");
     console.log("Yeni bir kayıt isteği geldi!");
     console.log("Kullanıcı Adı:", kullanici_adi);
     console.log("E-posta:", email);
 
     try {
+        const hashedSifre = await bcrypt.hash(sifre, 10);
+        
         const yeniKullanici = await pool.query(
             "INSERT INTO kullanicilar (tam_isim, kullanici_adi, email, sifre) VALUES ($1, $2, $3, $4) RETURNING *",
-            [tam_isim, kullanici_adi, email, sifre]
+            [tam_isim, kullanici_adi, email, hashedSifre]
         );
-        // 2. Veritabanı işleminin başarılı olduğunu loglayalım
         console.log("✅ Veritabanına başarıyla kaydedildi: ID ->", yeniKullanici.rows[0].id);
-        
         res.json({ basari: true, mesaj: "Kayıt başarılı!" });
 
     } catch (err) {
@@ -26,27 +32,32 @@ router.post('/register', async (req, res) => {
         res.status(500).json({ basari: false, mesaj: "Bu kullanıcı adı veya e-posta zaten kullanımda!" });
     }
 });
-    
+
 // 2. GİRİŞ YAP (LOGIN) API
-// GİRİŞ YAPMA (LOGIN)
 router.post('/login', async (req, res) => {
     const { email, sifre } = req.body;
+
+    if (!email || !sifre) {
+        return res.status(400).json({ basari: false, mesaj: "Email ve şifre zorunlu!" });
+    }
+
     const pool = req.app.locals.pool;
 
     try {
-        // 1. Kullanıcıyı e-posta adresiyle ara
-        const kullanici = await pool.query("SELECT * FROM kullanicilar WHERE email = $1", [email]);
+        const kullanici = await pool.query(
+            "SELECT * FROM kullanicilar WHERE email = $1", 
+            [email]
+        );
 
         if (kullanici.rows.length === 0) {
             return res.status(401).json({ basari: false, mesaj: "Böyle bir kullanıcı bulunamadı!" });
         }
 
-        // 2. Şifreyi kontrol et (Şu an düz metin olarak kontrol ediyoruz)
-        if (kullanici.rows[0].sifre !== sifre) {
+        const sifreDogruMu = await bcrypt.compare(sifre, kullanici.rows[0].sifre);
+        if (!sifreDogruMu) {
             return res.status(401).json({ basari: false, mesaj: "Şifre hatalı!" });
         }
 
-        // 3. Başarılı giriş
         res.json({ 
             basari: true, 
             mesaj: "Giriş başarılı! Hoş geldin " + kullanici.rows[0].tam_isim,
@@ -57,8 +68,8 @@ router.post('/login', async (req, res) => {
         });
 
     } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ basari: false, mesaj: "Sunucu hatası!" });
+        console.error("LOGIN HATASI:", err.message);
+        res.status(500).json({ basari: false, mesaj: err.message });
     }
 });
 
